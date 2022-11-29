@@ -66,11 +66,11 @@ function Get-ChocolateyConfig {
 function Remove-ChocolateyConfig {
     <#
         .SYNOPSIS
-        Unsets the given Chocolatey configuration entry, reverting it to the default value.
+        Unsets the given Chocolatey CLI or GUI configuration entry, reverting it to the default value.
     #>
     [CmdletBinding()]
     param(
-        # A CommandInfo object containing the path to choco.exe.
+        # A CommandInfo object containing the path to a Chocolatey executable.
         [Parameter(Mandatory = $true)]
         [System.Management.Automation.CommandInfo]
         $ChocoCommand,
@@ -97,11 +97,11 @@ function Remove-ChocolateyConfig {
 function Set-ChocolateyConfig {
     <#
         .SYNOPSIS
-        Sets the given Chocolatey configuration entry to the requested value.
+        Sets the given Chocolatey CLI or GUI configuration entry to the requested value.
     #>
     [CmdletBinding()]
     param(
-        # A CommandInfo object containing the path to choco.exe.
+        # A CommandInfo object containing the path to a Chocolatey executable.
         [Parameter(Mandatory = $true)]
         [System.Management.Automation.CommandInfo]
         $ChocoCommand,
