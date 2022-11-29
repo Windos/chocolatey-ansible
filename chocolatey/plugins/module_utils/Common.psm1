@@ -40,21 +40,28 @@ function Get-AnsibleModule {
 function Get-ChocolateyCommand {
     <#
         .SYNOPSIS
-        Retrieves a CommandInfo object for `choco.exe` if it is present on the system.
+        Retrieves a CommandInfo object for Chocolatey executables if it is present on the system.
 
         .DESCRIPTION
-        Returns either a CommandInfo object which contains the path the `choco.exe`
-        or registers a task failure and exits if it cannot be found.
+        Returns either a CommandInfo object which contains the path to the specified
+        Chocolatey executable, defaulting to `choco.exe`, or registers a task failure
+        and exits if it cannot be found.
     #>
     [CmdletBinding()]
     param(
         # If provided, does not terminate the task run when choco.exe is not found.
         [Parameter()]
         [switch]
-        $IgnoreMissing
+        $IgnoreMissing,
+
+        # Specifies which Chocolatey executable to return, defaults to choco.exe
+        [Parameter()]
+        [ValidateSet('choco.exe', 'chocolateyguicli.exe')]
+        [string]
+        $Executable = 'choco.exe'
     )
 
-    $command = Get-Command -Name choco.exe -CommandType Application -ErrorAction SilentlyContinue
+    $command = Get-Command -Name $Executable -CommandType Application -ErrorAction SilentlyContinue
 
     if (-not $command) {
         $installDir = if ($env:ChocolateyInstall) {
@@ -64,10 +71,18 @@ function Get-ChocolateyCommand {
             "$env:SYSTEMDRIVE\ProgramData\Chocolatey"
         }
 
-        $command = Get-Command -Name "$installDir\bin\choco.exe" -CommandType Application -ErrorAction SilentlyContinue
+        $command = Get-Command -Name "$installDir\bin\$Executable" -CommandType Application -ErrorAction SilentlyContinue
 
         if (-not ($command -or $IgnoreMissing)) {
-            $message = "Failed to find Chocolatey installation, make sure choco.exe is in the PATH env value"
+            switch ($Executable) {
+                'choco.exe' {
+                    $message = "Failed to find Chocolatey installation, make sure choco.exe is in the PATH env value"
+                }
+                'chocolateyguicli.exe' {
+                    $message = "Failed to find Chocolatey GUI installation, make sure chocolateyguicli.exe is in the PATH env value"
+                }
+            }
+
             Assert-TaskFailed -Message $message
         }
     }

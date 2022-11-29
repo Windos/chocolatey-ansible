@@ -6,7 +6,7 @@
 function Get-ChocolateyFeature {
     <#
         .SYNOPSIS
-        Retrieves a hashtable containing the feature states of all Chocolatey features.
+        Retrieves a hashtable containing the feature states of all Chocolatey CLI or GUI features.
 
         .DESCRIPTION
         Outputs a hashtable where the keys correspond to configuration names, and the
@@ -14,7 +14,7 @@ function Get-ChocolateyFeature {
     #>
     [CmdletBinding()]
     param(
-        # A CommandInfo object containing the path to choco.exe.
+        # A CommandInfo object containing the path to a Chocolatey executable.
         [Parameter(Mandatory = $true)]
         [System.Management.Automation.CommandInfo]
         $ChocoCommand
@@ -51,20 +51,20 @@ function Get-ChocolateyFeature {
 function Set-ChocolateyFeature {
     <#
         .SYNOPSIS
-        Sets the target Chocolatey feature to the desired state.
+        Sets the target Chocolatey CLI or GUI feature to the desired state.
 
         .DESCRIPTION
-        If the `-Enabled` switch is not provided, disables the target Chocolatey feature.
-        Otherwise, enables the target Chocolatey feature.
+        If the `-Enabled` switch is not provided, disables the target Chocolatey CLI or GUI feature.
+        Otherwise, enables the target Chocolatey CLI or GUI feature.
     #>
     [CmdletBinding()]
     param(
-        # A CommandInfo object containing the path to choco.exe.
+        # A CommandInfo object containing the path to Chocolatey executable.
         [Parameter(Mandatory = $true)]
         [System.Management.Automation.CommandInfo]
         $ChocoCommand,
 
-        # The name of the target Chocolatey feature.
+        # The name of the target Chocolatey CLI or GUI feature.
         [Parameter(Mandatory = $true)]
         [string]
         $Name,
