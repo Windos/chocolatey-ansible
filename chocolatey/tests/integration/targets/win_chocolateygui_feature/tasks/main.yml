@@ -1,0 +1,25 @@
+---
+- name: ensure Chocolatey is installed
+  win_chocolatey:
+    name: chocolatey
+    state: present
+
+- name: ensure Chocolatey GUI is installed
+  win_chocolatey:
+    name: chocolateygui
+    state: present
+
+- name: ensure we start from a baseline for test feature
+  win_chocolateygui_feature:
+    name: DefaultToTileViewForLocalSource
+    state: absent
+
+- block:
+  - name: run tests
+    include_tasks: tests.yml
+
+  always:
+  - name: set feature back to enabled
+    win_chocolateygui_feature:
+      name: DefaultToTileViewForLocalSource
+      state: enabled
