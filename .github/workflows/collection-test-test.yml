@@ -1,0 +1,84 @@
+name: CI Pipeline (Local WSL Testing)
+
+on:
+  workflow_dispatch:
+  # push:
+  #   branches: [ "master" ]
+  #   tags: [ "*" ]
+  # pull_request:
+  #   branches: [ "master" ]
+
+jobs:
+  test_collection:
+    name: Test Collection
+    runs-on: windows-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        ansible_version: ["2.15", "2.16", "2.17"]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure Windows Host for WinRM
+        run: |
+          net user ansible passWORD123! /add
+          net localgroup Administrators ansible /add
+
+          winrm quickconfig -q
+          
+          winrm set winrm/config/service/auth '@{Basic="true"}'
+          winrm set winrm/config/service '@{AllowUnencrypted="true"}'
+
+          New-NetFirewallRule -Name "Allow-WinRM-HTTP-WSL" -DisplayName "Allow WinRM HTTP WSL" -Enabled True -Profile Any -Action Allow -Direction Inbound -LocalPort 5985 -Protocol TCP
+
+      - name: Setup WSL
+        uses: Vampire/setup-wsl@v7
+        with:
+          distribution: Ubuntu-22.04
+
+      - name: Prepare WSL Control Node
+        shell: wsl-bash {0}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-pip
+          
+          sudo pip3 install "ansible-core~=${{ matrix.ansible_version }}.0" pywinrm
+
+          ansible-galaxy collection install ansible.windows
+
+      - name: Build and Install Collection
+        shell: wsl-bash {0}
+        run: |
+          cd chocolatey
+          
+          VERSION=$(date +%Y.%-m.%-d)
+          sed -i "s/{{ REPLACE_VERSION }}/$VERSION/g" galaxy.yml
+          
+          # Build the collection
+          ansible-galaxy collection build --force
+          
+          # Find the generated tarball and install it globally
+          TARBALL=$(ls chocolatey-chocolatey-*.tar.gz | head -n 1)
+          ansible-galaxy collection install $TARBALL --force
+
+      - name: Run Ansible Integration Tests
+        shell: wsl-bash {0}
+        run: |
+          cd ~/.ansible/collections/ansible_collections/chocolatey/chocolatey
+
+          WIN_HOST=$(ip route show default | awk '{print $3}')
+
+          if [ -z "$WIN_HOST" ]; then
+            WIN_HOST="localhost"
+          fi
+
+          echo "[windows]" > tests/integration/inventory.winrm
+          echo "win-target ansible_host=$WIN_HOST ansible_port=5985 ansible_connection=winrm ansible_user=ansible ansible_password=passWORD123! ansible_winrm_server_cert_validation=ignore" >> tests/integration/inventory.winrm
+          
+          ansible-test windows-integration -vvv --requirements --continue-on-error --exclude win_chocolatey-legacy
+          ansible-test sanity -vvvvv --requirements
+          ansible-test coverage xml -vvvvv --requirements
+          
