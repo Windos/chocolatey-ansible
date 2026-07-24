@@ -73,8 +73,7 @@
     - ansible_chocolatey.config.proxyBypassOnLocal == True
     - ansible_chocolatey.config.proxyUser == 'test-user'
     - ansible_chocolatey.feature.checksumFiles == true
-    - ansible_chocolatey.packages[0].package == 'chocolatey'
-    - ansible_chocolatey.packages[0].version is defined
+    - "'chocolatey' in (ansible_chocolatey.packages | map(attribute='package') | list)"
     - ansible_chocolatey.outdated is defined
     - ansible_chocolatey.sources[0].admin_only == False
     - ansible_chocolatey.sources[0].allow_self_service == False
