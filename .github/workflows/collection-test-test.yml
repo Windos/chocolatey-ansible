@@ -34,6 +34,14 @@ jobs:
 
           New-NetFirewallRule -Name "Allow-WinRM-HTTP-WSL" -DisplayName "Allow WinRM HTTP WSL" -Enabled True -Profile Any -Action Allow -Direction Inbound -LocalPort 5985 -Protocol TCP
 
+          $maxRetries = 10
+          $retryCount = 0
+          while ((Test-NetConnection -ComputerName localhost -Port 5985).TcpTestSucceeded -eq $false) {
+            if ($retryCount -ge $maxRetries) { throw "WinRM port 5985 is not listening" }
+            Start-Sleep -Seconds 3
+            $retryCount++
+          }
+
       - name: Setup WSL
         uses: Vampire/setup-wsl@v7
         with:
