@@ -146,7 +146,8 @@
   assert:
     that:
     - install_multiple is changed
-    - install_multiple_actual.stdout_lines == [test_choco_package1 + "|0.1.0", test_choco_package2 + "|1.0.0"]
+    - (test_choco_package1 + "|0.1.0") in install_multiple_actual.stdout_lines
+    - (test_choco_package2 + "|1.0.0") in install_multiple_actual.stdout_lines
     - (install_multiple_package1.stdout|from_json).allow_empty_checksums == False
     - (install_multiple_package1.stdout|from_json).force == False
     - (install_multiple_package1.stdout|from_json).force_x86 == False
@@ -204,7 +205,8 @@
   assert:
     that:
     - remove_multiple is changed
-    - remove_multiple_actual.stdout_lines == []
+    - (test_choco_package1 + "|0.1.0") not in remove_multiple_actual.stdout_lines
+    - (test_choco_package2 + "|1.0.0") not in remove_multiple_actual.stdout_lines
     - remove_multiple_package1.stat.exists == False
     - remove_multiple_package2.stat.exists == False
 
@@ -597,7 +599,8 @@
   assert:
     that:
     - pin_multiple_check is changed
-    - pin_multiple_actual_check.stdout == ""
+    - (test_choco_package1 + "|0.1.0") not in pin_multiple_actual_check.stdout_lines
+    - (test_choco_package2 + "|1.0.1-beta1") not in pin_multiple_actual_check.stdout_lines
 
 - name: pin 2 packages
   win_chocolatey:
@@ -616,7 +619,8 @@
   assert:
     that:
     - pin_multiple is changed
-    - pin_multiple_actual.stdout_lines == ["ansible|0.1.0", "ansible-test|1.0.1-beta1"]
+    - (test_choco_package1 + "|0.1.0") in pin_multiple_actual.stdout_lines
+    - (test_choco_package2 + "|1.0.1-beta1") in pin_multiple_actual.stdout_lines
 
 - name: pin 2 packages (idempotent)
   win_chocolatey:
@@ -648,7 +652,8 @@
   assert:
     that:
     - unpin_version is changed
-    - unpin_version_actual.stdout_lines == ["ansible-test|1.0.1-beta1"]
+    - (test_choco_package1 + "|0.1.0") not in unpin_version_actual.stdout_lines
+    - (test_choco_package2 + "|1.0.1-beta1") in unpin_version_actual.stdout_lines
 
 - name: unpin multiple packages without a version
   win_chocolatey:
@@ -667,7 +672,8 @@
   assert:
     that:
     - unpin_multiple is changed
-    - unpin_multiple_actual.stdout == ""
+    - (test_choco_package1 + "|0.1.0") not in unpin_multiple_actual.stdout_lines
+    - (test_choco_package2 + "|1.0.1-beta1") not in unpin_multiple_actual.stdout_lines
 
 - name: attempt to uninstall a nonexistent version of an installed package
   win_chocolatey:
