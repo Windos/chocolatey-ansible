@@ -83,10 +83,12 @@ jobs:
             WIN_HOST="localhost"
           fi
 
+          # Wait up to 30 seconds for the WinRM port to be reachable from within WSL
+          timeout 30 bash -c "until echo > /dev/tcp/$WIN_HOST/5985 2>/dev/null; do sleep 1; done"
+
           echo "[windows]" > tests/integration/inventory.winrm
           echo "win-target ansible_host=$WIN_HOST ansible_port=5985 ansible_connection=winrm ansible_user=ansible ansible_password=passWORD123! ansible_winrm_server_cert_validation=ignore" >> tests/integration/inventory.winrm
           
           ansible-test windows-integration -vvv --requirements --continue-on-error --exclude win_chocolatey-legacy
           ansible-test sanity -vvvvv --requirements
           ansible-test coverage xml -vvvvv --requirements
-          
