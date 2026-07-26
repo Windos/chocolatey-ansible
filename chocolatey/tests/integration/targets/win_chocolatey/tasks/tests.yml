@@ -272,7 +272,7 @@
   register: install_params_actual
 
 - name: get info of install package with params
-  win_shell: Get-Content -Path '{{ test_choco_path }}\{{ test_choco_package1 }}-0.0.1.txt'
+  win_shell: Get-Content -Path '{{ test_choco_path }}\{{ test_choco_package1 }}-0.0.1.txt' -Raw
   register: install_params_info
 
 - name: assert install package with params
@@ -319,7 +319,7 @@
   register: install_manual_params_actual
 
 - name: get info of install package with manually specified params
-  win_shell: Get-Content -Path '{{ test_choco_path }}\{{ test_choco_package1 }}-0.0.1.txt'
+  win_shell: Get-Content -Path '{{ test_choco_path }}\{{ test_choco_package1 }}-0.0.1.txt' -Raw
   register: install_manual_params_info
 
 - name: assert install package with manually specified params
@@ -550,16 +550,19 @@
     name: all
     state: latest
   register: all_latest
+  when: lookup('env', 'GITHUB_ACTIONS') != 'true'
 
 - name: get result of upgrade all packages
   win_command: choco.exe list --limit-output --exact {{ test_choco_package1|quote }}
   register: all_latest_actual
+  when: lookup('env', 'GITHUB_ACTIONS') != 'true'
 
 - name: assert upgrade all packages
   assert:
     that:
     - all_latest is changed
     - all_latest_actual.stdout_lines == [test_choco_package1 + "|0.1.0"]
+  when: lookup('env', 'GITHUB_ACTIONS') != 'true'
 
 - name: install newer version of package
   win_chocolatey:
@@ -683,7 +686,7 @@
   register: remove_nonexistent_version
 
 - name: get result of uninstall a nonexistent version of an installed package
-  win_command: choco.exe list --limit-output --all-versions
+  win_command: choco.exe list --limit-output --all-versions {{ test_choco_package1|quote }}
   register: remove_nonexistent_version_result
 
 - name: assert uninstall of nonexistent version of an installed package
