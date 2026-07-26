@@ -13,6 +13,12 @@
   register: fail_all_reinstalled
   failed_when: fail_all_reinstalled.msg != "Cannot specify the package name as 'all' when state=reinstalled"
 
+- name: Pin nginx to prevent upgrade
+  ansible.windows.win_chocolatey:
+    name: nginx
+    state: present
+    pinned: true
+
 - name: install package (check mode)
   win_chocolatey:
     name: '{{ test_choco_package1 }}'
