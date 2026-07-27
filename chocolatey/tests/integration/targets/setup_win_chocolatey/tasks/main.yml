@@ -3,6 +3,7 @@
   win_chocolatey:
     name: '{{ test_choco_packages }}'
     state: absent
+  ignore_pinned: true
 
 - name: ensure testing dir is cleaned
   win_file:
