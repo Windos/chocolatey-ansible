@@ -15,6 +15,7 @@
     win_chocolatey:
       name: '{{ test_choco_packages }}'
       state: absent
+      ignore_pinned: true
 
   - name: remove test sources
     win_chocolatey_source:
