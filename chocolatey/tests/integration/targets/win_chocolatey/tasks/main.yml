@@ -11,6 +11,15 @@
     include_tasks: choco_v1_tests.yml
 
   always:
+  # The ignore_pinned tests leave a pin behind. Chocolatey CLI skips pinned packages
+  # on uninstall and still exits 0, so without this the package survives the cleanup
+  # and leaks into whichever target runs next.
+  - name: ensure test packages are unpinned after tests
+    win_chocolatey:
+      name: '{{ test_choco_packages }}'
+      state: present
+      pinned: no
+
   - name: ensure test package is uninstalled after tests
     win_chocolatey:
       name: '{{ test_choco_packages }}'
