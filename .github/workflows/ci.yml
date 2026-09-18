@@ -178,6 +178,8 @@ jobs:
       - name: Install ansible-core in the control node
         shell: wsl-bash {0}
         run: |
+          set -euo pipefail
+
           # Retries a command with a widening delay. PyPI and Galaxy both return
           # transient errors often enough to lose a run to them; a Galaxy response
           # that ansible-galaxy could not parse has already cost one.
@@ -213,6 +215,8 @@ jobs:
         id: integration
         shell: wsl-bash {0}
         run: |
+          set -euo pipefail
+
           . ~/ansible-venv/bin/activate
 
           workspace=$(wslpath '${{ github.workspace }}')
@@ -239,6 +243,7 @@ jobs:
             echo "ansible_password=$(cat "$workspace/.winrm-password")"
             echo "ansible_connection=winrm"
             echo "ansible_port=5985"
+            echo "ansible_winrm_transport=basic"
             echo "ansible_winrm_server_cert_validation=ignore"
             echo "ansible_become_method=runas"
           } > tests/integration/inventory.winrm
