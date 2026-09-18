@@ -14,8 +14,11 @@
     Counting failures alone is not enough to call a run good. A target that dies before
     it runs anything still writes a testsuite element, just with zero tests in it, so
     the totals can read as a clean pass while a whole target silently did not execute.
-    Both that case and the outcome of the step that ran ansible-test are reported here,
-    so the summary can never claim success for a job that failed.
+    Nor is finding an XML file the same as finding results: ansible-test writes its
+    coverage report into the same tree, so the directory can hold XML and yet contain no
+    testsuite elements at all. Both of those, and the outcome of the step that ran
+    ansible-test, are reported here, so the summary can never claim success for a job
+    that failed.
 
     .EXAMPLE
     .\Write-TestSummary.ps1 -Path ./testresults -Title 'Integration (ansible-core 2.20)'
@@ -75,7 +78,7 @@ if ($resultFiles.Count -eq 0) {
     return
 }
 
-$suites = foreach ($file in $resultFiles) {
+$suites = @(foreach ($file in $resultFiles) {
     foreach ($suite in ([xml](Get-Content -Path $file.FullName -Raw)).SelectNodes('//testsuite')) {
         [PSCustomObject]@{
             Name     = $suite.name
@@ -85,11 +88,14 @@ $suites = foreach ($file in $resultFiles) {
             Skipped  = [int]$suite.skipped
         }
     }
-}
+})
 
-$totals = $suites | Measure-Object -Property Tests, Failures, Errors, Skipped -Sum
-$total = @{}
-foreach ($measurement in $totals) { $total[$measurement.Property] = [int]$measurement.Sum }
+# Default to zero so the totals still render as numbers when nothing was measured.
+$total = @{ Tests = 0; Failures = 0; Errors = 0; Skipped = 0 }
+
+foreach ($measurement in $suites | Measure-Object -Property Tests, Failures, Errors, Skipped -Sum) {
+    $total[$measurement.Property] = [int]$measurement.Sum
+}
 
 # A target that failed before running anything still writes a testsuite element with
 # no tests in it. Counting only failures would read that as a clean pass.
@@ -101,7 +107,13 @@ if ($total.Failures -gt 0 -or $total.Errors -gt 0) {
     $problems.Add("$($total.Failures) failed, $($total.Errors) errored")
 }
 
-if ($emptySuites.Count -gt 0) {
+# Finding an XML file is not the same as finding results. ansible-test writes its
+# coverage report into the same tree, so the directory can contain XML while holding no
+# testsuite elements at all -- a run that produced nothing must not read as a pass.
+if ($suites.Count -eq 0) {
+    $problems.Add('no test suites were found in the result files')
+}
+elseif ($emptySuites.Count -gt 0) {
     $problems.Add("$($emptySuites.Count) suite(s) recorded no tests at all")
 }
 

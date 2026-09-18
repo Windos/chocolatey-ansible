@@ -36,11 +36,6 @@ param(
     [string]
     $Password = $env:ANSIBLE_TEST_PASSWORD,
 
-    # The port the HTTP WinRM listener should be reachable on.
-    [Parameter()]
-    [int]
-    $Port = 5985,
-
     # How long to wait for the WinRM listener to start accepting connections.
     [Parameter()]
     [int]
@@ -48,6 +43,12 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+
+# This script does not create a listener itself -- winrm quickconfig does, and it always
+# uses WinRM's default HTTP port. The firewall rule and the readiness check below must
+# therefore target that same port. It is deliberately not a parameter: accepting one would
+# let a caller open a rule and then wait for a listener that is never created there.
+$port = 5985
 
 if (-not $Password) {
     throw "No password supplied. Set the ANSIBLE_TEST_PASSWORD environment variable or pass -Password."
@@ -87,7 +88,7 @@ winrm set winrm/config/winrs '@{MaxMemoryPerShellMB="1024"}'
 $ruleName = 'Allow-WinRM-HTTP-Ansible'
 
 if (-not (Get-NetFirewallRule -Name $ruleName -ErrorAction SilentlyContinue)) {
-    Write-Host "Adding firewall rule '$ruleName' for inbound TCP $Port"
+    Write-Host "Adding firewall rule '$ruleName' for inbound TCP $port"
     $firewallRule = @{
         Name        = $ruleName
         DisplayName = 'Allow WinRM HTTP (Ansible integration tests)'
@@ -96,21 +97,21 @@ if (-not (Get-NetFirewallRule -Name $ruleName -ErrorAction SilentlyContinue)) {
         Action      = 'Allow'
         Direction   = 'Inbound'
         Protocol    = 'TCP'
-        LocalPort   = $Port
+        LocalPort   = $port
     }
 
     New-NetFirewallRule @firewallRule | Out-Null
 }
 
-Write-Host "Waiting for WinRM to accept connections on port $Port"
+Write-Host "Waiting for WinRM to accept connections on port $port"
 $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
 
-while (-not (Test-NetConnection -ComputerName localhost -Port $Port -InformationLevel Quiet -WarningAction SilentlyContinue)) {
+while (-not (Test-NetConnection -ComputerName localhost -Port $port -InformationLevel Quiet -WarningAction SilentlyContinue)) {
     if ((Get-Date) -gt $deadline) {
-        throw "WinRM is not listening on port $Port after $TimeoutSeconds seconds."
+        throw "WinRM is not listening on port $port after $TimeoutSeconds seconds."
     }
 
     Start-Sleep -Seconds 3
 }
 
-Write-Host "WinRM is listening on port $Port and ready for '$Username' to connect."
+Write-Host "WinRM is listening on port $port and ready for '$Username' to connect."
